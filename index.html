@@ -5,83 +5,119 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>旅プラ - グループ旅行計画</title>
     <link rel="stylesheet" href="style.css">
-    <!-- 綺麗なグラフを描くためのライブラリ (Chart.js) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <div class="container">
         <header>
             <h1>👥 大人数旅行計画サポーター「旅プラ」</h1>
-            <p>みんなの希望を集めて、最適なプランを多数決で決めよう！</p>
         </header>
 
-        <!-- STEP 1: 希望入力フォーム -->
-        <section class="card">
-            <h2>1. あなたの希望を入力</h2>
-            <form id="surveyForm">
-                <div class="form-group">
-                    <label for="userName">名前（ニックネーム）</label>
-                    <input type="text" id="userName" required placeholder="例: たろう">
-                </div>
-                <div class="form-group">
-                    <label for="userBudget">予算の上限 (円)</label>
-                    <input type="number" id="userBudget" value="30000" min="5000" step="5000">
-                </div>
-                <div class="form-group">
-                    <label for="userActivity">一番やりたいこと</label>
-                    <select id="userActivity">
-                        <option value="観光名所巡り">観光名所巡り</option>
-                        <option value="温泉・リラックス">温泉・リラックス</option>
-                        <option value="アクティビティ・体験">アクティビティ・体験</option>
-                        <option value="ショッピング">ショッピング</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn">回答を送信</button>
-            </form>
+        <!-- 【新設】STEP 0: グループ作成 & ID登録画面 -->
+        <section class="card" id="loginSection">
+            <h2>🏠 グループ作成 / 参加</h2>
+            <div class="form-group">
+                <label for="groupNameInput">グループ名</label>
+                <input type="text" id="groupNameInput" placeholder="例: 卒業旅行2026">
+            </div>
+            <div class="form-group">
+                <label for="userIdInput">あなたの個人ID（半角英数字）</label>
+                <input type="text" id="userIdInput" placeholder="例: taro123">
+            </div>
+            <button class="btn" onclick="login()">グループに入る</button>
         </section>
 
-        <!-- STEP 2: 集計結果（データが溜まったら表示） -->
-        <section class="card" id="resultSection">
-            <h2>2. みんなの希望の集計結果</h2>
-            <div class="charts-container">
-                <div class="chart-box">
-                    <h3>💰 予算の分布</h3>
-                    <canvas id="budgetChart"></canvas>
+        <!-- メインコンテンツ（初期状態は非表示、ログイン後にJavaScriptで表示） -->
+        <div id="mainContent" style="display: none;">
+            
+            <!-- グループ情報 & メンバー招待マネージャー -->
+            <section class="card bg-highlight">
+                <div class="group-header">
+                    <h2>🏞️ グループ: <span id="displayGroupName"></span></h2>
+                    <p>現在のログインID: <strong id="displayUserId" class="badge"></strong></p>
                 </div>
-                <div class="chart-box">
-                    <h3>🎯 やりたいことの傾向</h3>
-                    <canvas id="activityChart"></canvas>
+                <hr>
+                <h3>📩 メンバー招待・参加依頼</h3>
+                <p class="info-text">デモ用：一緒に旅行に行くメンバーのIDを追加して、招待した状態を再現できます。</p>
+                <div class="invite-box">
+                    <input type="text" id="inviteIdInput" placeholder="例: hanako456">
+                    <button class="btn btn-sm" onclick="inviteMember()">招待を送る</button>
                 </div>
-            </div>
-        </section>
+                <div class="member-list-box">
+                    <h4>参加中のメンバー一覧：</h4>
+                    <ul id="memberList"></ul>
+                </div>
+                <!-- デモ用クイック切り替え -->
+                <div class="demo-switch">
+                    <label for="userSwitch">👤 発表用（操作ユーザーを切り替える）:</label>
+                    <select id="userSwitch" onchange="switchUser(this.value)"></select>
+                </div>
+            </section>
 
-        <!-- STEP 3: AIプラン提案（条件分岐モック） -->
-        <section class="card" id="proposalSection">
-            <h2>3. 集計結果に基づく提案プラン</h2>
-            <p class="info-text">💡 多数派の意見と平均予算から選ばれたプランです。</p>
-            <div class="plans-container">
-                <div class="plan-card">
-                    <h3>🏆 プランA: 王道満喫コース</h3>
-                    <p id="planADesc">みんなの希望を詰め込んだアクティブなプランです。</p>
-                </div>
-                <div class="plan-card">
-                    <h3>☕ プランB: のんびり癒やしコース</h3>
-                    <p id="planBDesc">移動を少なめにして、ゆったり過ごすプランです。</p>
-                </div>
-            </div>
-        </section>
+            <!-- STEP 1: 希望入力 -->
+            <section class="card">
+                <h2>1. あなたの希望を入力</h2>
+                <form id="surveyForm">
+                    <div class="form-group">
+                        <label for="userBudget">予算の上限 (円)</label>
+                        <input type="number" id="userBudget" value="30000" min="5000" step="5000">
+                    </div>
+                    <div class="form-group">
+                        <label for="userActivity">一番やりたいこと</label>
+                        <select id="userActivity">
+                            <option value="観光名所巡り">観光名所巡り</option>
+                            <option value="温泉・リラックス">温泉・リラックス</option>
+                            <option value="アクティビティ・体験">アクティビティ・体験</option>
+                            <option value="ショッピング">ショッピング</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn">回答を送信</button>
+                </form>
+            </section>
 
-        <!-- STEP 4: 多数決システム -->
-        <section class="card" id="voteSection">
-            <h2>4. どちらのプランが良いですか？（多数決）</h2>
-            <div class="vote-buttons">
-                <button class="btn btn-outline" onclick="castVote('A')">👍 プランAに投票</button>
-                <button class="btn btn-outline" onclick="castVote('B')">👍 プランBに投票</button>
-            </div>
-            <div class="chart-box vote-chart">
-                <canvas id="voteChart"></canvas>
-            </div>
-        </section>
+            <!-- STEP 2: 集計結果 -->
+            <section class="card">
+                <h2>2. みんなの希望の集計結果</h2>
+                <div class="charts-container">
+                    <div class="chart-box">
+                        <h3>💰 予算の分布</h3>
+                        <canvas id="budgetChart"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <h3>🎯 やりたいことの傾向</h3>
+                        <canvas id="activityChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 3: プラン提案 -->
+            <section class="card">
+                <h2>3. 集計結果に基づく提案プラン</h2>
+                <div class="plans-container">
+                    <div class="plan-card">
+                        <h3>🏆 プランA: 王道満喫コース</h3>
+                        <p id="planADesc">データを入力すると提案が生成されます。</p>
+                    </div>
+                    <div class="plan-card">
+                        <h3>☕ プランB: のんびり癒やしコース</h3>
+                        <p id="planBDesc">データを入力すると提案が生成されます。</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 4: 多数決システム（1人1票ロック機能付き） -->
+            <section class="card">
+                <h2>4. どちらのプランが良いですか？（多数決）</h2>
+                <p class="info-text">※1つのIDにつき1回しか投票できません。</p>
+                <div class="vote-buttons">
+                    <button class="btn btn-outline" onclick="castVote('A')">👍 プランAに投票</button>
+                    <button class="btn btn-outline" onclick="castVote('B')">👍 プランBに投票</button>
+                </div>
+                <div class="chart-box vote-chart">
+                    <canvas id="voteChart"></canvas>
+                </div>
+            </section>
+        </div>
     </div>
 
     <script src="script.js"></script>
