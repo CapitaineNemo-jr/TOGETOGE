@@ -1,201 +1,156 @@
-// アプリケーションデータ
-let groupName = "";
-let currentUserId = "";
-let members = []; // グループに参加しているIDのリスト
-let surveyData = {}; // IDごとの希望データ { 'taro': {budget: 30000, activity: '温泉'}, ... }
-let votes = { A: 0, B: 0 };
-let votedUsers = []; // すでに投票した人のIDリスト
+// --- データ配列群 ---
+let plans = [
+  { day: "1", time: "10:00", title: "京都駅 集合", memo: "中央口改札の近くのコインロッカー前", budget: "" },
+  { day: "1", time: "11:30", title: "ランチ：手織り寿し", memo: "予約済み。各自2,000円くらい", budget: "2000" },
+  { day: "2", time: "09:00", title: "ホテル出発", memo: "チェックアウトを忘れないこと！", budget: "" }
+];
 
-// グラフ用インスタンス
-let budgetChartIdx = null;
-let activityChartIdx = null;
-let voteChartIdx = null;
+let candidates = [
+  { title: "伏見稲荷大社", memo: "千本鳥居で写真撮りたい！朝早めがいいかも", votes: 4 },
+  { title: "アラビカ京都 嵐山", memo: "渡月橋みながらコーヒー飲めるところ☕️", votes: 5 }
+];
 
-// ログイン処理（グループ作成・参加）
-function login() {
-    groupName = document.getElementById('groupNameInput').value.trim();
-    currentUserId = document.getElementById('userIdInput').value.trim();
+// 初回読み込み時に、しおりと候補リストを両方描画する
+window.onload = function() {
+  renderPlans();
+  renderCandidates();
+};
 
-    if (!groupName || !currentUserId) {
-        alert("グループ名とユーザーIDを入力してください。");
-        return;
+// ログインの処理
+function handleLogin(event) {
+  event.preventDefault();
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('main-screen').classList.remove('hidden');
+}
+
+// タブ切り替えの処理
+function switchTab(tabName) {
+  const contents = document.querySelectorAll('.tab-content');
+  contents.forEach(content => content.classList.add('hidden'));
+  document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(item => item.classList.remove('active'));
+  document.getElementById(`nav-${tabName}`).classList.add('active');
+}
+
+// しおり（プラン）を追加する処理
+function addPlan() {
+  const dayVal = document.getElementById('new-day').value;
+  const timeVal = document.getElementById('new-time').value;
+  const titleVal = document.getElementById('new-title').value.trim();
+  const memoVal = document.getElementById('new-memo').value.trim();
+  const budgetVal = document.getElementById('new-budget').value.trim();
+
+  if (!timeVal || !titleVal) {
+    alert('「時間」と「タイトル」を入力してね！');
+    return;
+  }
+
+  plans.push({ day: dayVal, time: timeVal, title: titleVal, memo: memoVal, budget: budgetVal });
+  renderPlans();
+
+  document.getElementById('new-time').value = '';
+  document.getElementById('new-title').value = '';
+  document.getElementById('new-memo').value = '';
+  document.getElementById('new-budget').value = '';
+}
+
+// しおりを描画する処理（ソート込み）
+function renderPlans() {
+  plans.sort((a, b) => {
+    if (a.day !== b.day) return Number(a.day) - Number(b.day);
+    return a.time.localeCompare(b.time);
+  });
+
+  const container = document.getElementById('timeline-container');
+  container.innerHTML = '';
+
+  let currentDay = null;
+  let currentTimelineNode = null;
+
+  plans.forEach(plan => {
+    if (plan.day !== currentDay) {
+      currentDay = plan.day;
+      const dayBlock = document.createElement('div');
+      dayBlock.className = 'day-block';
+
+      const dayHeader = document.createElement('div');
+      dayHeader.className = 'day-header';
+      dayHeader.innerText = `📆 ${currentDay}日目`;
+      dayBlock.appendChild(dayHeader);
+
+      currentTimelineNode = document.createElement('div');
+      currentTimelineNode.className = 'timeline';
+      dayBlock.appendChild(currentTimelineNode);
+
+      container.appendChild(dayBlock);
     }
 
-    // メンバーリストに自分を追加
-    if (!members.includes(currentUserId)) {
-        members.push(currentUserId);
+    let budgetHTML = '';
+    if (plan.budget) {
+      budgetHTML = `<div class="plan-budget">予算: ¥${Number(plan.budget).toLocaleString()}</div>`;
     }
 
-    // 画面切り替え
-    document.getElementById('loginSection').style.display = 'none';
-    document.getElementById('mainContent').style.display = 'block';
-
-    // 表示の更新
-    document.getElementById('displayGroupName').innerText = groupName;
-    updateUserDisplay();
-    updateMemberList();
+    const item = document.createElement('div');
+    item.className = 'timeline-item';
+    item.innerHTML = `
+      <div class="time">${plan.time}</div>
+      <div class="plan-card">
+        <div class="plan-title">${plan.title}</div>
+        <div class="plan-memo">${plan.memo}</div>
+        ${budgetHTML}
+      </div>
+    `;
+    currentTimelineNode.appendChild(item);
+  });
 }
 
-// メンバー招待（デモ用にIDを追加する）
-function inviteMember() {
-    const inviteId = document.getElementById('inviteIdInput').value.trim();
-    if (!inviteId) return;
+// 行きたい候補を追加する処理
+function addCandidate() {
+  const titleInput = document.getElementById('new-candidate-title');
+  const memoInput = document.getElementById('new-candidate-memo');
 
-    if (members.includes(inviteId)) {
-        alert("そのIDはすでに参加しています。");
-        return;
-    }
+  const titleVal = titleInput.value.trim();
+  const memoVal = memoInput.value.trim();
 
-    members.push(inviteId);
-    document.getElementById('inviteIdInput').value = '';
-    updateMemberList();
-    alert(`メンバー「${inviteId}」に参加依頼を送信し、グループに追加しました！`);
+  if (!titleVal) {
+    alert('スポット名は必ず入力してね！');
+    return;
+  }
+
+  candidates.push({ title: titleVal, memo: memoVal, votes: 0 });
+  renderCandidates();
+
+  titleInput.value = '';
+  memoInput.value = '';
 }
 
-// メンバー一覧と、デモ用の切り替えセレクトボックスを更新
-function updateMemberList() {
-    const listEl = document.getElementById('memberList');
-    const switchEl = document.getElementById('userSwitch');
-    
-    listEl.innerHTML = '';
-    switchEl.innerHTML = '';
-
-    members.forEach(m => {
-        // 一覧の更新
-        const li = document.createElement('li');
-        const isAnswered = surveyData[m] ? " (回答済)" : " (未回答)";
-        li.innerText = `👤 ${m}${isAnswered}`;
-        listEl.appendChild(li);
-
-        // 切り替え用セレクトボックスの更新
-        const opt = document.createElement('option');
-        opt.value = m;
-        opt.innerText = m;
-        if (m === currentUserId) opt.selected = true;
-        switchEl.appendChild(opt);
-    });
+// 候補に投票する処理
+function voteCandidate(index) {
+  candidates[index].votes += 1;
+  renderCandidates();
 }
 
-// 操作ユーザーの切り替え（発表デモ用）
-function switchUser(userId) {
-    currentUserId = userId;
-    updateUserDisplay();
-    
-    // フォームの値を、もしそのユーザーがすでに回答していれば再現、なければ初期化
-    if (surveyData[currentUserId]) {
-        document.getElementById('userBudget').value = surveyData[currentUserId].budget;
-        document.getElementById('userActivity').value = surveyData[currentUserId].activity;
-    } else {
-        document.getElementById('userBudget').value = 30000;
-        document.getElementById('userActivity').value = '観光名所巡り';
-    }
-}
+// 候補リストを描画する処理（投票数順ソート込み）
+function renderCandidates() {
+  candidates.sort((a, b) => b.votes - a.votes);
 
-function updateUserDisplay() {
-    document.getElementById('displayUserId').innerText = currentUserId;
-}
+  const container = document.getElementById('candidates-container');
+  container.innerHTML = '';
 
-// 希望フォームの送信
-document.getElementById('surveyForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    const budget = parseInt(document.getElementById('userBudget').value);
-    const activity = document.getElementById('userActivity').value;
-
-    // 現在のログインIDのデータとして保存（上書き可能）
-    surveyData[currentUserId] = { budget, activity };
-
-    updateCharts();
-    updateProposals();
-    updateMemberList();
-    alert(`ID: ${currentUserId} の希望を登録しました！`);
-});
-
-// グラフ更新
-function updateCharts() {
-    const dataArray = Object.values(surveyData);
-    const idArray = Object.keys(surveyData);
-    if (dataArray.length === 0) return;
-
-    // 1. 予算グラフ
-    const budgets = dataArray.map(d => d.budget);
-    if (budgetChartIdx) budgetChartIdx.destroy();
-    const ctxB = document.getElementById('budgetChart').getContext('2d');
-    budgetChartIdx = new Chart(ctxB, {
-        type: 'bar',
-        data: {
-            labels: idArray,
-            datasets: [{ label: '予算 (円)', data: budgets, backgroundColor: '#3498db' }]
-        },
-        options: { responsive: true }
-    });
-
-    // 2. やりたいことグラフ
-    const activityCounts = {};
-    dataArray.forEach(d => {
-        activityCounts[d.activity] = (activityCounts[d.activity] || 0) + 1;
-    });
-
-    if (activityChartIdx) activityChartIdx.destroy();
-    const ctxA = document.getElementById('activityChart').getContext('2d');
-    activityChartIdx = new Chart(ctxA, {
-        type: 'doughnut',
-        data: {
-            labels: Object.keys(activityCounts),
-            datasets: [{ data: Object.values(activityCounts), backgroundColor: ['#e74c3c', '#2ecc71', '#f1c40f', '#9b59b6'] }]
-        },
-        options: { responsive: true }
-    });
-}
-
-// プラン提案の更新
-function updateProposals() {
-    const dataArray = Object.values(surveyData);
-    if (dataArray.length === 0) return;
-
-    const avgBudget = dataArray.reduce((sum, d) => sum + d.budget, 0) / dataArray.length;
-
-    if (avgBudget < 20000) {
-        document.getElementById('planADesc').innerText = `予算重視！近場で楽しむローカル日帰り観光ツアー（想定費用: 約${Math.round(avgBudget)}円）`;
-        document.getElementById('planBDesc').innerText = `お家やレンタルスペースを借り切ってまったりパーティー（想定費用: 約${Math.round(avgBudget * 0.8)}円）`;
-    } else {
-        document.getElementById('planADesc').innerText = `ちょっと贅沢！話題のスポットを巡る1泊2日の温泉旅行（想定費用: 約${Math.round(avgBudget)}円）`;
-        document.getElementById('planBDesc').innerText = `グランピング施設で大自然とリッチなBBQを堪能するプラン（想定費用: 約${Math.round(avgBudget * 0.9)}円）`;
-    }
-}
-
-// 【重要】1人1票のチェック付き投票システム
-function castVote(plan) {
-    // そもそも希望を出していない（グループにアクティブじゃない）場合は弾く仕様
-    if (!surveyData[currentUserId]) {
-        alert("投票する前に、まずは「1. あなたの希望を入力」から条件を送信してください！");
-        return;
-    }
-
-    // ★ここで1人1票の重複チェック！
-    if (votedUsers.includes(currentUserId)) {
-        alert(`❌ エラー: ID「${currentUserId}」はすでに投票済みです。1人1票までしか投票できません！`);
-        return;
-    }
-
-    // 投票を記録
-    votes[plan]++;
-    votedUsers.push(currentUserId); // 投票済みリストに現在のIDを追加
-    
-    updateVoteChart();
-    alert(`ID「${currentUserId}」の投票を受け付けました！`);
-}
-
-// 投票結果グラフ
-function updateVoteChart() {
-    if (voteChartIdx) voteChartIdx.destroy();
-    const ctxV = document.getElementById('voteChart').getContext('2d');
-    voteChartIdx = new Chart(ctxV, {
-        type: 'pie',
-        data: {
-            labels: ['プランA', 'プランB'],
-            datasets: [{ data: [votes.A, votes.B], backgroundColor: ['#2ecc71', '#3498db'] }]
-        },
-        options: { responsive: true }
-    });
+  candidates.forEach((spot, index) => {
+    const item = document.createElement('div');
+    item.className = 'candidate-item';
+    item.innerHTML = `
+      <div class="candidate-info">
+        <h4>${spot.title}</h4>
+        <p>${spot.memo || '（メモなし）'}</p>
+      </div>
+      <button type="button" class="btn-vote" onclick="voteCandidate(${index})">
+        ❤️ ${spot.votes} 票
+      </button>
+    `;
+    container.appendChild(item);
+  });
 }
