@@ -1,15 +1,3 @@
-// --- データ配列群 ---
-let plans = [
-  { day: "1", time: "10:00", title: "京都駅 集合", memo: "中央口改札の近くのコインロッカー前", budget: "" },
-  { day: "1", time: "11:30", title: "ランチ：手織り寿し", memo: "予約済み。各自2,000円くらい", budget: "2000" },
-  { day: "2", time: "09:00", title: "ホテル出発", memo: "チェックアウトを忘れないこと！", budget: "" }
-];
-
-let candidates = [
-  { title: "伏見稲荷大社", memo: "千本鳥居で写真撮りたい！朝早めがいいかも", votes: 4 },
-  { title: "アラビカ京都 嵐山", memo: "渡月橋みながらコーヒー飲めるところ☕️", votes: 5 }
-];
-
 // 初回読み込み時に、しおりと候補リストを両方描画する
 window.onload = function() {
   renderPlans();
