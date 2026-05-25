@@ -173,6 +173,16 @@ header {
   background: rgba(255,255,255,0.2);
   padding: 4px 8px;
   border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.member-count:hover {
+  background-color: rgba(255, 255, 255, 0.35); /* マウスを乗せたら少し明るく */
+}
+.member-count:focus {
+  outline: 2px solid white;
+  background-color: rgba(255, 255, 255, 0.4);  /* クリックしたらさらに明るく */
 }
 .main-content {
   padding: 20px;
