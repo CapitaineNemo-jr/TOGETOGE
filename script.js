@@ -185,3 +185,15 @@ function focusGroupName() {
   sel.removeAllRanges();
   sel.addRange(range);
 }
+
+function saveMemberCount() {
+  const memberCountEl = document.getElementById('member-count');
+  let newCount = memberCountEl.innerText.trim(); // 入力された文字を取得
+
+  if (!newCount) {
+    newCount = "メンバー 1人";
+    memberCountEl.innerText = newCount;
+  }
+  
+  console.log("確定した新しいメンバー人数:", newCount);
+}
