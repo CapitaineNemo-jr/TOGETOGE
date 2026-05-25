@@ -154,3 +154,34 @@ function renderCandidates() {
     container.appendChild(item);
   });
 }
+
+// --- グループ名編集のコントロール機能 ---
+function checkEnter(event) {
+  if (event.key === 'Enter') {
+    event.preventDefault(); 
+    event.target.blur();    
+  }
+}
+
+function saveGroupName() {
+  const groupNameEl = document.getElementById('group-name');
+  let newName = groupNameEl.innerText.trim();
+
+  if (!newName) {
+    newName = "無題の旅行 🗺️";
+    groupNameEl.innerText = newName;
+  }
+  console.log("確定した新しいグループ名:", newName);
+}
+
+function focusGroupName() {
+  const groupNameEl = document.getElementById('group-name');
+  groupNameEl.focus();
+  
+  const range = document.createRange();
+  const sel = window.getSelection();
+  range.selectNodeContents(groupNameEl);
+  range.collapse(false);
+  sel.removeAllRanges();
+  sel.addRange(range);
+}
