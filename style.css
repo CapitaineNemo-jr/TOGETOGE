@@ -23,7 +23,7 @@ body {
   position: relative;
 }
 
-/* 画面幅が768px以上（パソコンやタブレット）になったら適用するスタイル */
+/* 画面幅が768px以上（パソコンやタブレット）のパソコン用スタイル */
 @media (min-width: 768px) {
   body {
     padding: 20px 0;
@@ -127,10 +127,47 @@ header {
   justify-content: space-between;
   align-items: center;
 }
+
+/* タイトルとペンマークの並び */
+.group-title-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 .group-name {
   font-size: 1.25rem;
   font-weight: bold;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background 0.2s;
 }
+.group-name:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+.group-name:focus {
+  outline: 2px solid white;
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* ペン型ボタンの装飾 */
+.btn-edit-icon {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-edit-icon:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
 .member-count {
   font-size: 0.85rem;
   background: rgba(255,255,255,0.2);
